@@ -71,11 +71,10 @@ body {
   padding: 20px;
 }
 
-/* ========== SCREENS ========== */
 .screen {
   display: none;
   width: 100%;
-  max-width: 860px;
+  max-width: 1200px;
   text-align: center;
   animation: fadeIn 0.6s ease;
 }
@@ -83,7 +82,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: clamp(12px, 3vh, 28px);
 }
 
 @keyframes fadeIn {
@@ -110,7 +109,7 @@ body {
 /* ========== TITLE SCREEN ========== */
 .title-logo {
   font-family: "Bebas Neue", sans-serif;
-  font-size: clamp(60px, 12vw, 120px);
+  font-size: clamp(64px, 15vw, 180px);
   letter-spacing: 0.05em;
   line-height: 1;
   background: linear-gradient(
@@ -126,21 +125,21 @@ body {
 }
 
 .title-sub {
-  font-size: 14px;
+  font-size: 24px;
   letter-spacing: 0.4em;
   color: var(--muted);
   text-transform: uppercase;
 }
 
 .start-btn {
-  margin-top: 16px;
-  padding: 18px 60px;
+  margin-top: 24px;
+  padding: clamp(16px, 3vh, 24px) clamp(40px, 8vw, 80px);
   font-family: "Bebas Neue", sans-serif;
-  font-size: 28px;
+  font-size: clamp(28px, 5vw, 40px);
   letter-spacing: 0.15em;
   background: linear-gradient(135deg, var(--accent), #ff7a00);
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   color: white;
   cursor: pointer;
   position: relative;
@@ -174,7 +173,7 @@ body {
 /* ========== QUESTION COUNTER ========== */
 .q-counter {
   font-family: "Bebas Neue", sans-serif;
-  font-size: clamp(80px, 20vw, 180px);
+  font-size: clamp(80px, 20vw, 240px);
   line-height: 1;
   color: var(--accent);
   text-shadow:
@@ -185,7 +184,7 @@ body {
 
 .q-label {
   font-family: "Bebas Neue", sans-serif;
-  font-size: 20px;
+  font-size: 32px;
   letter-spacing: 0.5em;
   color: var(--muted);
 }
@@ -228,13 +227,13 @@ body {
 /* ========== COUNTDOWN ========== */
 .countdown-wrap {
   position: relative;
-  width: 160px;
-  height: 160px;
+  width: 260px;
+  height: 260px;
 }
 
 .countdown-svg {
-  width: 160px;
-  height: 160px;
+  width: 260px;
+  height: 260px;
   transform: rotate(-90deg);
 }
 
@@ -262,14 +261,14 @@ body {
   align-items: center;
   justify-content: center;
   font-family: "Bebas Neue", sans-serif;
-  font-size: 64px;
+  font-size: clamp(64px, 15vw, 100px);
   color: var(--accent2);
   text-shadow: var(--glow2);
 }
 
 /* ========== ANSWER REVEAL ========== */
 .reveal-label {
-  font-size: 13px;
+  font-size: 20px;
   letter-spacing: 0.5em;
   color: var(--muted);
   text-transform: uppercase;
@@ -277,7 +276,7 @@ body {
 
 .answer-title {
   font-family: "Bebas Neue", sans-serif;
-  font-size: clamp(36px, 8vw, 72px);
+  font-size: clamp(32px, 8vw, 100px);
   line-height: 1.1;
   background: linear-gradient(135deg, var(--accent3), var(--accent));
   -webkit-background-clip: text;
@@ -288,7 +287,7 @@ body {
 }
 
 .answer-artist {
-  font-size: 18px;
+  font-size: 28px;
   color: var(--muted);
   letter-spacing: 0.1em;
 }
@@ -307,7 +306,8 @@ body {
 /* ========== YOUTUBE EMBED ========== */
 .yt-wrap {
   width: 100%;
-  max-width: 640px;
+  max-width: min(960px, calc(45vh * 16 / 9));
+  margin: 0 auto;
   aspect-ratio: 16/9;
   border-radius: 8px;
   overflow: hidden;
@@ -326,9 +326,9 @@ body {
 
 /* ========== NEXT BUTTON ========== */
 .next-btn {
-  padding: 14px 48px;
+  padding: clamp(12px, 2vh, 16px) clamp(24px, 5vw, 48px);
   font-family: "Bebas Neue", sans-serif;
-  font-size: 22px;
+  font-size: clamp(18px, 4vw, 24px);
   letter-spacing: 0.2em;
   background: transparent;
   border: 2px solid var(--accent2);
@@ -348,8 +348,10 @@ body {
 
 /* ========== RESULT SCREEN ========== */
 .result-title {
-  font-family: "Bebas Neue", sans-serif;
-  font-size: clamp(48px, 10vw, 96px);
+  font-family: "Noto Sans JP", sans-serif;
+  font-weight: 900;
+  font-size: clamp(64px, 15vw, 150px);
+  line-height: 1.2;
   background: linear-gradient(135deg, var(--accent3), var(--accent2));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -357,7 +359,7 @@ body {
 }
 
 .result-msg {
-  font-size: 18px;
+  font-size: clamp(18px, 4vw, 32px);
   color: var(--muted);
   letter-spacing: 0.1em;
 }
@@ -378,15 +380,15 @@ body {
 
 .header-logo {
   font-family: "Bebas Neue", sans-serif;
-  font-size: 22px;
+  font-size: clamp(24px, 4vw, 36px);
   letter-spacing: 0.2em;
   color: var(--accent);
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .header-progress {
   font-family: "Bebas Neue", sans-serif;
-  font-size: 18px;
+  font-size: clamp(18px, 3vw, 28px);
   letter-spacing: 0.15em;
   color: var(--muted);
 }
@@ -418,14 +420,14 @@ body {
 }
 
 .audio-hint {
-  font-size: 13px;
+  font-size: clamp(14px, 3vw, 24px);
   color: var(--muted);
   letter-spacing: 0.2em;
 }
 
 .play-btn {
-  width: 72px;
-  height: 72px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), #ff7a00);
   border: none;
@@ -433,7 +435,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 48px;
   box-shadow: var(--glow);
   transition:
     transform 0.2s,
@@ -467,10 +469,10 @@ body {
 
 /* ========== SECTION LABEL ========== */
 .section-pill {
-  padding: 4px 20px;
+  padding: clamp(6px, 1.5vh, 12px) clamp(20px, 4vw, 40px);
   border-radius: 100px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 11px;
+  font-size: clamp(12px, 2.5vw, 18px);
   letter-spacing: 0.5em;
   color: var(--muted);
   text-transform: uppercase;
@@ -479,7 +481,7 @@ body {
 /* ========== THINKING TEXT ========== */
 .thinking-text {
   font-family: "Bebas Neue", sans-serif;
-  font-size: 28px;
+  font-size: 48px;
   letter-spacing: 0.4em;
   color: var(--muted);
   animation: blink 1.2s ease-in-out infinite;
