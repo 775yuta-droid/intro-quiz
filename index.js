@@ -710,6 +710,4 @@ function jumpToQuestion(index) {
 
   currentQ = index;
   setHeaderVisible(true);
-  toggleJumpMenu();
-  loadQuestion();
-}
+  toggleJumpMen
