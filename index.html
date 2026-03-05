@@ -18,7 +18,7 @@
   <!-- Header -->
   <div class="header-bar" id="header-bar" style="display:none">
     <div class="header-logo">🎵 INTRO QUIZ</div>
-    <div class="header-controls" style="display:flex; align-items:center; gap:16px;">
+    <div class="header-controls">
       <button class="jump-menu-btn" onclick="toggleJumpMenu()">🔢 JUMP</button>
       <div class="header-progress" id="header-progress">1 / 21</div>
     </div>
@@ -40,8 +40,6 @@
     <div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div>
   </div>
 
-
-
   <!-- ============ SCREENS ============ -->
   <div id="app">
 
@@ -49,13 +47,11 @@
     <div class="screen active" id="screen-title">
       <div class="title-logo">INTRO<br>QUIZ</div>
       <div class="title-sub">全 <span id="title-total">--</span> 問 ・ イントロを当てろ</div>
-      <div class="wave-container" id="title-wave">
-        <!-- bars added by JS -->
-      </div>
+      <div class="wave-container" id="title-wave"></div>
       <button class="start-btn" onclick="startQuiz()">▶ START</button>
     </div>
 
-    <!-- QUESTION SCREEN (question number display) -->
+    <!-- QUESTION SCREEN -->
     <div class="screen" id="screen-question">
       <div class="section-pill">QUESTION</div>
       <div class="q-counter" id="q-counter">1</div>
@@ -64,6 +60,10 @@
         <div class="wave-container" id="play-wave"></div>
         <button class="play-btn" id="play-btn" onclick="togglePlay()">▶</button>
         <div class="audio-hint" id="audio-hint">クリックして再生</div>
+        <!-- 音源が無い問題のスキップボタン（通常は非表示）-->
+        <button id="no-audio-btn" class="no-audio-btn" style="display:none" onclick="startCountdown()">
+          ⏭ カウントダウンへ進む
+        </button>
       </div>
       <audio id="audio-player" preload="auto"></audio>
     </div>
@@ -79,6 +79,8 @@
         <div class="countdown-num" id="countdown-num">30</div>
       </div>
       <div class="wave-container" id="countdown-wave"></div>
+      <!-- 正解を見るボタン（手動遷移）-->
+      <button id="skip-ans-btn" class="skip-ans-btn" onclick="skipToAnswer()">⏩ 正解を見る</button>
     </div>
 
     <!-- ANSWER SCREEN -->
@@ -107,8 +109,6 @@
 
   <!-- Flash effect -->
   <div class="flash" id="flash"></div>
-
-
 
   <script src="index.js"></script>
 </body>
