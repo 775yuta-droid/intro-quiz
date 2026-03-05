@@ -493,7 +493,7 @@ function loadQuestion() {
   // If no audio, show skip button instead
   if (!hasAudio) {
     document.getElementById("audio-hint").innerHTML =
-      '<button onclick="startCountdown()" style="background:transparent;border:1px solid var(--accent2);border-radius:4px;color:var(--accent2);padding:8px 20px;cursor:pointer;font-size:13px;letter-spacing:0.1em;font-family:\'Noto Sans JP\';">⏭ カウントダウンへ進む</button>';
+      '<button onclick="startCountdown()" style="background:transparent;border:1px solid var(--accent2);border-radius:4px;color:var(--accent2);padding:clamp(8px, 2vw, 16px) clamp(20px, 4vw, 40px);cursor:pointer;font-size:clamp(14px, 3vw, 24px);letter-spacing:0.1em;font-family:\'Noto Sans JP\';">⏭ カウントダウンへ進む</button>';
   }
 }
 
@@ -570,7 +570,6 @@ function showAnswer() {
   const ytWrap = document.getElementById("yt-wrap");
   const ytIframe = document.getElementById("yt-iframe");
   const localVideoEl = document.getElementById("local-video");
-  const extLink = document.getElementById("yt-external-link");
 
   if (ytId) {
     ytIframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&start=${start}&rel=0&modestbranding=1`;
@@ -578,11 +577,6 @@ function showAnswer() {
     localVideoEl.style.display = "none";
     localVideoEl.pause();
     ytWrap.style.display = "block";
-
-    if (extLink) {
-      extLink.href = `https://www.youtube.com/watch?v=${ytId}&t=${start}s`;
-      extLink.style.display = "inline-block";
-    }
   } else if (localVideo) {
     localVideoEl.src = localVideo;
     localVideoEl.volume = answerVol;
@@ -590,7 +584,6 @@ function showAnswer() {
     ytIframe.style.display = "none";
     ytIframe.src = "";
     ytWrap.style.display = "block";
-    if (extLink) extLink.style.display = "none";
 
     // 読み込みが完了してから開始秒数を設定し、再生する
     localVideoEl.onloadedmetadata = () => {
@@ -609,7 +602,6 @@ function showAnswer() {
     ytIframe.style.display = "none";
     localVideoEl.src = "";
     localVideoEl.style.display = "none";
-    if (extLink) extLink.style.display = "none";
   }
 
   // Last question: change button text
@@ -671,7 +663,7 @@ document.getElementById("screen-countdown").addEventListener(
   skipBtn.id = "skip-ans-btn";
   skipBtn.textContent = "⏩ 正解を見る";
   skipBtn.style.cssText =
-    'margin-top:8px;background:transparent;border:1px solid var(--muted);border-radius:4px;color:var(--muted);padding:8px 24px;cursor:pointer;font-size:13px;letter-spacing:0.15em;font-family:"Noto Sans JP";transition:all 0.2s';
+    'margin-top:8px;background:transparent;border:1px solid var(--muted);border-radius:4px;color:var(--muted);padding:clamp(8px, 2vw, 16px) clamp(24px, 5vw, 48px);cursor:pointer;font-size:clamp(14px, 3vw, 24px);letter-spacing:0.15em;font-family:"Noto Sans JP";transition:all 0.2s';
   skipBtn.onmouseover = () => {
     skipBtn.style.borderColor = "var(--accent2)";
     skipBtn.style.color = "var(--accent2)";
