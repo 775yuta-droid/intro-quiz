@@ -6,11 +6,11 @@
  *
  * @property {string} title          - 曲名
  * @property {string} artist         - アーティスト名
- * @property {string} questionAudio  - 問題用音源（musicdata/ 以下の相対パス or URL）
- * @property {string} answerYtId     - 正解用 YouTube 動画ID
- * @property {string} answerVideo    - 正解用 ローカル動画または直接URL（answerYtIdがない場合に使用）
- * @property {number} answerStartSec - YouTube 再生開始秒数（サビの頭など）
- * @property {number} answerVolume   - 正解用 ローカル動画の音量（0.0 ~ 1.0。デフォルトは 1.0）
+ * @property {string} questionAudio  - 問題用音源（music_data/ 以下の相対パス or URL）
+ * @property {string} answerYtId     - 正解用 YouTube 動画ID（URLの v= 以降）
+ * @property {string} answerVideo    - 正解用 ローカル動画または直接URL（answerYtId がない場合に使用）
+ * @property {number} answerStartSec - 正解動画の再生開始秒数（サビの頭など）
+ * @property {number} answerVolume   - 正解用ローカル動画の音量（0.0 〜 1.0、デフォルト: 1.0）
  */
 class Song {
   constructor({
@@ -35,10 +35,12 @@ class Song {
 // ============================================================
 //  曲リスト（ここを編集して問題を追加・変更する）
 //
-//  questionAudio : 例) "musicdata/lemon.mp3"
-//                  （musicdata フォルダに音源ファイルを置いてください）
+//  questionAudio : 例) "music_data/lemon.mp3"
+//                  （music_data フォルダに音源ファイルを置いてください）
 //  answerYtId    : YouTube の動画ID（URLの v= 以降）
-//  answerStartSec: YouTube の再生開始秒数（サビが始まる秒など）
+//  answerVideo   : ローカル動画ファイルのパス（answerYtId がない場合のみ使用）
+//  answerStartSec: 再生開始秒数（サビが始まる秒など）
+//  answerVolume  : ローカル動画の音量（0.0〜1.0、省略時は 1.0）
 // ============================================================
 const DEFAULT_SONGS = [
   new Song({
@@ -100,7 +102,7 @@ const DEFAULT_SONGS = [
   new Song({
     title: "らしさ",
     artist: "Official髭男dism",
-    questionAudio: "music_data/09_らしさ(ひげだん).mp3",
+    questionAudio: "music_data/09_らしさ(ひげだん).mp3",
     answerVideo: "correct-music/ans-らしさ.mp4",
     answerStartSec: 5,
   }),
@@ -114,7 +116,7 @@ const DEFAULT_SONGS = [
   new Song({
     title: "ヘビーローテーション",
     artist: "AKB48",
-    questionAudio: "music_data/11_ヘビーローテーション.mp3",
+    questionAudio: "music_data/11_ヘビーローテーション.mp3",
     answerYtId: "lkHlnWFnA0c",
     answerStartSec: 19,
   }),
@@ -184,7 +186,7 @@ const DEFAULT_SONGS = [
   new Song({
     title: "スジャータ",
     artist: "",
-    questionAudio: "music_data/21_スジャータめいらくグループ.mp3",
+    questionAudio: "music_data/21_スジャータめいらくグループ.mp3",
     answerYtId: "zg8QS3czN-U",
     answerStartSec: 0,
   }),
@@ -194,10 +196,39 @@ const DEFAULT_SONGS = [
 //  STATE
 // ============================================================
 const songs = [...DEFAULT_SONGS];
+const TOTAL = songs.length;
 let currentQ = 0;
 let countdownTimer = null;
 let isPlaying = false;
-const TOTAL = songs.length;
+
+// ============================================================
+//  DOM CACHE（毎回 getElementById を呼ばないためにキャッシュ）
+// ============================================================
+const $ = {
+  headerBar: document.getElementById("header-bar"),
+  headerProgress: document.getElementById("header-progress"),
+  progressBarWrap: document.getElementById("progress-bar-wrap"),
+  progressBarFill: document.getElementById("progress-bar-fill"),
+  titleTotal: document.getElementById("title-total"),
+  qCounter: document.getElementById("q-counter"),
+  qLabelNum: document.getElementById("q-label-num"),
+  playBtn: document.getElementById("play-btn"),
+  audioHint: document.getElementById("audio-hint"),
+  noAudioBtn: document.getElementById("no-audio-btn"),
+  audioPlayer: document.getElementById("audio-player"),
+  countdownNum: document.getElementById("countdown-num"),
+  countdownArc: document.getElementById("countdown-arc"),
+  skipAnsBtn: document.getElementById("skip-ans-btn"),
+  answerTitle: document.getElementById("answer-song-title"),
+  answerArtist: document.getElementById("answer-artist"),
+  ytWrap: document.getElementById("yt-wrap"),
+  ytIframe: document.getElementById("yt-iframe"),
+  localVideo: document.getElementById("local-video"),
+  nextBtn: document.getElementById("next-btn"),
+  flash: document.getElementById("flash"),
+  jumpMenu: document.getElementById("jump-menu"),
+  jumpGrid: document.getElementById("jump-grid"),
+};
 
 // ============================================================
 //  CANVAS BACKGROUND VISUALIZER
@@ -216,7 +247,6 @@ const TOTAL = songs.length;
   resize();
   window.addEventListener("resize", resize);
 
-  // Create particles
   for (let i = 0; i < 120; i++) {
     particles.push({
       x: Math.random() * 2000,
@@ -224,18 +254,16 @@ const TOTAL = songs.length;
       r: Math.random() * 2 + 0.5,
       vx: (Math.random() - 0.5) * 0.4,
       vy: (Math.random() - 0.5) * 0.4,
-      hue: Math.random() * 60 + 180, // cyan to blue range
+      hue: Math.random() * 60 + 180,
       life: Math.random(),
     });
   }
 
-  // Waveform lines
   let waveOffset = 0;
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
 
-    // Gradient background
     const grad = ctx.createRadialGradient(
       W / 2,
       H / 2,
@@ -249,16 +277,15 @@ const TOTAL = songs.length;
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // Waveform lines
     waveOffset += 0.02;
+    const waveColors = [
+      "rgba(255,60,110,0.15)",
+      "rgba(0,229,255,0.1)",
+      "rgba(255,230,0,0.08)",
+    ];
     for (let j = 0; j < 3; j++) {
       ctx.beginPath();
-      ctx.strokeStyle =
-        j === 0
-          ? "rgba(255,60,110,0.15)"
-          : j === 1
-            ? "rgba(0,229,255,0.1)"
-            : "rgba(255,230,0,0.08)";
+      ctx.strokeStyle = waveColors[j];
       ctx.lineWidth = 1.5;
       for (let x = 0; x <= W; x += 4) {
         const amp = 30 + j * 15;
@@ -272,7 +299,6 @@ const TOTAL = songs.length;
       ctx.stroke();
     }
 
-    // Particles
     particles.forEach((p) => {
       p.x = (p.x + p.vx + W) % W;
       p.y = (p.y + p.vy + H) % H;
@@ -297,10 +323,7 @@ function createWaveBars(containerId, count = 20) {
   for (let i = 0; i < count; i++) {
     const b = document.createElement("div");
     b.className = "wave-bar";
-    const maxH = (20 + Math.random() * 50).toFixed(0);
-    const dur = (0.4 + Math.random() * 0.6).toFixed(2);
-    const delay = (Math.random() * 0.5).toFixed(2);
-    b.style.cssText = `--max-h:${maxH}px; --dur:${dur}s; --delay:${delay}s`;
+    b.style.cssText = `--max-h:${(20 + Math.random() * 50).toFixed(0)}px; --dur:${(0.4 + Math.random() * 0.6).toFixed(2)}s; --delay:${(Math.random() * 0.5).toFixed(2)}s`;
     c.appendChild(b);
   }
 }
@@ -310,11 +333,10 @@ createWaveBars("play-wave", 20);
 createWaveBars("countdown-wave", 24);
 createWaveBars("result-wave", 28);
 
-// Update title screen question count
-document.getElementById("title-total").textContent = TOTAL;
+$.titleTotal.textContent = TOTAL;
 
 // ============================================================
-//  SCREEN TRANSITIONS
+//  HELPER: SCREEN TRANSITIONS
 // ============================================================
 function showScreen(id) {
   document
@@ -324,123 +346,144 @@ function showScreen(id) {
   if (target) {
     target.classList.add("active");
     target.style.animation = "none";
-    target.offsetHeight;
+    target.offsetHeight; // reflow trigger
     target.style.animation = "";
   }
 }
 
 function flashEffect() {
-  const f = document.getElementById("flash");
-  f.style.animation = "none";
-  f.offsetHeight;
-  f.style.animation = "flash 0.3s ease";
+  $.flash.style.animation = "none";
+  $.flash.offsetHeight;
+  $.flash.style.animation = "flash 0.3s ease";
 }
 
 // ============================================================
-//  AUDIO
+//  HELPER: MEDIA CONTROL
+// ============================================================
+/** YouTube iframeとローカル動画の再生を両方止める */
+function stopMedia() {
+  $.ytIframe.src = "";
+  $.localVideo.pause();
+}
+
+// ============================================================
+//  HELPER: HEADER / PROGRESS BAR VISIBILITY
+// ============================================================
+/** ヘッダーとプログレスバーの表示・非表示を切り替える */
+function setHeaderVisible(visible) {
+  $.headerBar.style.display = visible ? "flex" : "none";
+  $.progressBarWrap.style.display = visible ? "block" : "none";
+}
+
+// ============================================================
+//  AUDIO: WEB AUDIO API (ビープ・笛の音)
 // ============================================================
 let audioCtx = null;
 
+/** AudioContext を遅延初期化して返す */
+function getAudioCtx() {
+  if (!audioCtx)
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+/**
+ * 単音のビープを鳴らす
+ * @param {number} freq     - 周波数 (Hz)
+ * @param {string} type     - オシレーター波形 ("sine" など)
+ * @param {number} duration - 長さ (秒)
+ * @param {number} vol      - 音量 (0.0〜1.0)
+ */
 function playBeep(freq = 880, type = "sine", duration = 0.15, vol = 0.8) {
   try {
-    if (!audioCtx)
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
     osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(
-      0.01,
-      audioCtx.currentTime + duration,
-    );
-    osc.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + duration);
+    osc.stop(ctx.currentTime + duration);
   } catch (e) {
     console.error("Audio beep failed", e);
   }
 }
 
+/**
+ * ホイッスル（笛）に近い音を鳴らす
+ * 2つの周波数をわずかにずらして同時発音し、特有のうねりを出す
+ * @param {number} duration - 長さ (秒)
+ */
 function playWhistle(duration = 0.8) {
   try {
-    if (!audioCtx)
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") audioCtx.resume();
+    const ctx = getAudioCtx();
 
-    // ホイッスルに近い音を作るために、2つの高い周波数を同時に鳴らしてうねり（ビブラート）を出す
     const createTone = (freq) => {
-      const osc = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = "sine";
-
-      // 出だしで少し周波数が上がる（ピロッという吹き始めの感じ）
-      osc.frequency.setValueAtTime(freq - 150, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(
-        freq,
-        audioCtx.currentTime + 0.05,
-      );
-
-      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      // 音量を少し大きくする(0.9)
-      gainNode.gain.linearRampToValueAtTime(0.9, audioCtx.currentTime + 0.05);
-      gainNode.gain.setValueAtTime(0.9, audioCtx.currentTime + duration - 0.2);
-      gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
-
-      osc.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(freq - 150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq, ctx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.9, ctx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.9, ctx.currentTime + duration - 0.2);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + duration);
+      osc.stop(ctx.currentTime + duration);
     };
 
     createTone(2600);
-    createTone(2650); // 50Hzずらすことで「ピーー」という笛特有のうねりを作る
+    createTone(2650); // 50Hz ずらすことで笛特有のうねりを作る
   } catch (e) {
     console.error("Audio whistle failed", e);
   }
 }
 
-const audioPlayer = document.getElementById("audio-player");
-
+// ============================================================
+//  AUDIO: QUESTION PLAYBACK (MP3 etc.)
+// ============================================================
 function togglePlay() {
   const song = songs[currentQ];
-  const btn = document.getElementById("play-btn");
-  const hint = document.getElementById("audio-hint");
-  const bars = document.querySelectorAll("#play-wave .wave-bar");
 
   if (!song.questionAudio) {
-    hint.textContent = "⚠ 音源ファイルが設定されていません";
+    $.audioHint.textContent = "⚠ 音源ファイルが設定されていません";
     return;
   }
 
+  const bars = document.querySelectorAll("#play-wave .wave-bar");
+
   if (!isPlaying) {
-    audioPlayer.src = song.questionAudio;
-    audioPlayer.play().catch(() => {
-      hint.textContent = "再生できませんでした";
+    $.audioPlayer.src = song.questionAudio;
+    $.audioPlayer.play().catch(() => {
+      $.audioHint.textContent = "再生できませんでした";
     });
-    btn.textContent = "⏸";
-    hint.textContent = "再生中...";
+    $.playBtn.textContent = "⏸";
+    $.audioHint.textContent = "再生中...";
     bars.forEach((b) => b.classList.remove("paused"));
     isPlaying = true;
-    // Auto start countdown after 5s
+    // 5秒後に自動的にカウントダウンへ
     setTimeout(() => {
       if (isPlaying) startCountdown();
     }, 5000);
   } else {
-    audioPlayer.pause();
-    btn.textContent = "▶";
-    hint.textContent = "クリックして再生";
+    $.audioPlayer.pause();
+    $.playBtn.textContent = "▶";
+    $.audioHint.textContent = "クリックして再生";
     bars.forEach((b) => b.classList.add("paused"));
     isPlaying = false;
   }
 }
 
-audioPlayer.addEventListener("ended", () => {
+$.audioPlayer.addEventListener("ended", () => {
   isPlaying = false;
-  document.getElementById("play-btn").textContent = "▶";
-  document.getElementById("audio-hint").textContent = "再生終了";
+  $.playBtn.textContent = "▶";
+  $.audioHint.textContent = "再生終了";
   startCountdown();
 });
 
@@ -450,8 +493,7 @@ audioPlayer.addEventListener("ended", () => {
 function startQuiz() {
   flashEffect();
   currentQ = 0;
-  document.getElementById("header-bar").style.display = "flex";
-  document.getElementById("progress-bar-wrap").style.display = "block";
+  setHeaderVisible(true);
   loadQuestion();
 }
 
@@ -461,165 +503,158 @@ function loadQuestion() {
     return;
   }
 
-  // Update header
-  document.getElementById("header-progress").textContent =
-    `${currentQ + 1} / ${Math.min(songs.length, TOTAL)}`;
-  document.getElementById("progress-bar-fill").style.width =
-    `${(currentQ / Math.min(songs.length, TOTAL)) * 100}%`;
+  const total = Math.min(songs.length, TOTAL);
 
-  // Reset audio
-  audioPlayer.pause();
-  audioPlayer.src = "";
+  // ヘッダー更新
+  $.headerProgress.textContent = `${currentQ + 1} / ${total}`;
+  $.progressBarFill.style.width = `${(currentQ / total) * 100}%`;
+
+  // 音声リセット
+  $.audioPlayer.pause();
+  $.audioPlayer.src = "";
   isPlaying = false;
-  document.getElementById("play-btn").textContent = "▶";
+  $.playBtn.textContent = "▶";
 
+  // 音源の有無で UI を切り替え
   const hasAudio = !!songs[currentQ].questionAudio;
-  document.getElementById("audio-hint").textContent = hasAudio
-    ? "クリックして再生"
-    : "⚠ 音源なし";
+  $.audioHint.textContent = hasAudio ? "クリックして再生" : "⚠ 音源なし";
+  $.audioHint.style.display = hasAudio ? "" : "none";
+  $.noAudioBtn.style.display = hasAudio ? "none" : "";
 
-  // Question display
-  document.getElementById("q-counter").textContent = currentQ + 1;
-  document.getElementById("q-label-num").textContent = currentQ + 1;
+  // 問題番号表示
+  $.qCounter.textContent = currentQ + 1;
+  $.qLabelNum.textContent = currentQ + 1;
 
-  // Wave bars animate
+  // ウェーブバーをアニメーション
   document
     .querySelectorAll("#play-wave .wave-bar")
     .forEach((b) => b.classList.remove("paused"));
 
   flashEffect();
   showScreen("screen-question");
-
-  // If no audio, show skip button instead
-  if (!hasAudio) {
-    document.getElementById("audio-hint").innerHTML =
-      '<button onclick="startCountdown()" style="background:transparent;border:1px solid var(--accent2);border-radius:4px;color:var(--accent2);padding:clamp(8px, 2vw, 16px) clamp(20px, 4vw, 40px);cursor:pointer;font-size:clamp(14px, 3vw, 24px);letter-spacing:0.1em;font-family:\'Noto Sans JP\';">⏭ カウントダウンへ進む</button>';
-  }
 }
 
 function startCountdown() {
-  audioPlayer.pause();
+  $.audioPlayer.pause();
   isPlaying = false;
   clearInterval(countdownTimer);
 
   let remaining = 30;
-  const numEl = document.getElementById("countdown-num");
-  const arc = document.getElementById("countdown-arc");
   const circumference = 439.6;
 
-  numEl.textContent = remaining;
-  arc.style.stroke = "var(--accent2)";
-  arc.style.strokeDashoffset = "0";
+  $.countdownNum.textContent = remaining;
+  $.countdownNum.style.color = "";
+  $.countdownArc.style.stroke = "var(--accent2)";
+  $.countdownArc.style.strokeDashoffset = "0";
 
-  // Reset skip button style if it exists
-  const skipBtn = document.getElementById("skip-ans-btn");
-  if (skipBtn) {
-    skipBtn.textContent = "⏩ 正解を見る";
-    skipBtn.style.color = "var(--muted)";
-    skipBtn.style.borderColor = "var(--muted)";
-    skipBtn.style.transform = "scale(1)";
-  }
+  // スキップボタンを初期状態に戻す
+  $.skipAnsBtn.textContent = "⏩ 正解を見る";
+  $.skipAnsBtn.classList.remove("timeup");
 
   flashEffect();
   showScreen("screen-countdown");
 
   countdownTimer = setInterval(() => {
     remaining--;
-    numEl.textContent = remaining;
+    $.countdownNum.textContent = remaining;
 
-    // Arc progress
-    const progress = (30 - remaining) / 30;
-    arc.style.strokeDashoffset = circumference * progress;
+    // アーク進捗
+    $.countdownArc.style.strokeDashoffset =
+      circumference * ((30 - remaining) / 30);
 
-    // Color shift in final 10s
+    // 残り10秒から色変化
     if (remaining <= 10) {
-      arc.style.stroke = remaining <= 5 ? "var(--accent)" : "var(--accent3)";
-      numEl.style.color = remaining <= 5 ? "var(--accent)" : "var(--accent3)";
+      const color = remaining <= 5 ? "var(--accent)" : "var(--accent3)";
+      $.countdownArc.style.stroke = color;
+      $.countdownNum.style.color = color;
     }
 
-    // Play beep sound
+    // ビープ・笛の音
     if (remaining <= 5 && remaining > 0) {
-      playBeep(880, "sine", 0.15, 0.9); // Beep for last 5 seconds (音量大)
+      playBeep(880, "sine", 0.15, 0.9);
     } else if (remaining <= 0) {
-      playWhistle(0.8); // 笛の音 (ピーーーッ)
-
+      playWhistle(0.8);
       clearInterval(countdownTimer);
-      // 自動遷移を廃止し、ボタンで手動遷移を促す
-      // showAnswer();
-      if (skipBtn) {
-        skipBtn.textContent = "TIME UP! 正解を見る ⏩";
-        skipBtn.style.color = "var(--accent)";
-        skipBtn.style.borderColor = "var(--accent)";
-        skipBtn.style.transform = "scale(1.1)";
-      }
+      // タイムアップ：ボタンを強調して手動遷移を促す
+      $.skipAnsBtn.textContent = "TIME UP! 正解を見る ⏩";
+      $.skipAnsBtn.classList.add("timeup");
     }
   }, 1000);
 }
 
-function showAnswer() {
-  const song = songs[currentQ];
-  document.getElementById("answer-song-title").textContent = song.title;
-  document.getElementById("answer-artist").textContent = song.artist;
+/** スキップボタン（「⏩ 正解を見る」）からの遷移 */
+function skipToAnswer() {
+  clearInterval(countdownTimer);
+  showAnswer();
+}
 
-  // YouTube / Local Video playback
+// ============================================================
+//  HELPER: ANSWER MEDIA PLAYBACK
+// ============================================================
+/**
+ * 正解画面でYouTubeまたはローカル動画を再生する
+ * @param {Song} song
+ */
+function playAnswerMedia(song) {
   const ytId = song.answerYtId || "";
-  const localVideo = song.answerVideo || "";
+  const localPath = song.answerVideo || "";
   const start = song.answerStartSec || 0;
-  const answerVol = song.answerVolume !== undefined ? song.answerVolume : 1.0;
-
-  const ytWrap = document.getElementById("yt-wrap");
-  const ytIframe = document.getElementById("yt-iframe");
-  const localVideoEl = document.getElementById("local-video");
+  const vol = song.answerVolume ?? 1.0;
 
   if (ytId) {
-    ytIframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&start=${start}&rel=0&modestbranding=1`;
-    ytIframe.style.display = "block";
-    localVideoEl.style.display = "none";
-    localVideoEl.pause();
-    ytWrap.style.display = "block";
-  } else if (localVideo) {
-    localVideoEl.src = localVideo;
-    localVideoEl.volume = answerVol;
-    localVideoEl.style.display = "block";
-    ytIframe.style.display = "none";
-    ytIframe.src = "";
-    ytWrap.style.display = "block";
+    $.ytIframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&start=${start}&rel=0&modestbranding=1`;
+    $.ytIframe.style.display = "block";
+    $.localVideo.style.display = "none";
+    $.localVideo.pause();
+    $.ytWrap.style.display = "block";
+  } else if (localPath) {
+    $.localVideo.src = localPath;
+    $.localVideo.volume = vol;
+    $.localVideo.style.display = "block";
+    $.ytIframe.style.display = "none";
+    $.ytIframe.src = "";
+    $.ytWrap.style.display = "block";
 
-    // 読み込みが完了してから開始秒数を設定し、再生する
-    localVideoEl.onloadedmetadata = () => {
-      localVideoEl.currentTime = start;
-      localVideoEl.play().catch((e) => console.error(e));
+    // メタデータ読み込み完了後に開始秒数をセットして再生
+    $.localVideo.onloadedmetadata = () => {
+      $.localVideo.currentTime = start;
+      $.localVideo.play().catch((e) => console.error(e));
     };
-
-    // すでに読み込み済みだった場合のためのフォールバック
-    if (localVideoEl.readyState >= 1) {
-      localVideoEl.currentTime = start;
-      localVideoEl.play().catch((e) => console.error(e));
+    // すでに読み込み済みの場合のフォールバック
+    if ($.localVideo.readyState >= 1) {
+      $.localVideo.currentTime = start;
+      $.localVideo.play().catch((e) => console.error(e));
     }
   } else {
-    ytWrap.style.display = "none";
-    ytIframe.src = "";
-    ytIframe.style.display = "none";
-    localVideoEl.src = "";
-    localVideoEl.style.display = "none";
+    // 動画なし
+    $.ytWrap.style.display = "none";
+    $.ytIframe.src = "";
+    $.ytIframe.style.display = "none";
+    $.localVideo.src = "";
+    $.localVideo.style.display = "none";
   }
+}
 
-  // Last question: change button text
+// ============================================================
+//  QUIZ FLOW (continued)
+// ============================================================
+function showAnswer() {
+  const song = songs[currentQ];
+  $.answerTitle.textContent = song.title;
+  $.answerArtist.textContent = song.artist;
+
+  playAnswerMedia(song);
+
   const isLast = currentQ + 1 >= Math.min(songs.length, TOTAL);
-  document.getElementById("next-btn").textContent = isLast
-    ? "FINISH 🎉"
-    : "NEXT QUESTION →";
+  $.nextBtn.textContent = isLast ? "FINISH 🎉" : "NEXT QUESTION →";
 
   flashEffect();
   showScreen("screen-answer");
 }
 
 function nextQuestion() {
-  // Stop YouTube & Local Video
-  document.getElementById("yt-iframe").src = "";
-  document.getElementById("local-video").pause();
+  stopMedia();
   clearInterval(countdownTimer);
-
   currentQ++;
 
   if (currentQ >= Math.min(songs.length, TOTAL)) {
@@ -630,98 +665,51 @@ function nextQuestion() {
 }
 
 function showResultScreen() {
-  document.getElementById("header-bar").style.display = "none";
-  document.getElementById("progress-bar-wrap").style.display = "none";
+  setHeaderVisible(false);
   flashEffect();
   showScreen("screen-result");
 }
 
 function restartQuiz() {
-  document.getElementById("yt-iframe").src = "";
-  document.getElementById("local-video").pause();
+  stopMedia();
   clearInterval(countdownTimer);
   currentQ = 0;
+  setHeaderVisible(false);
   showScreen("screen-title");
-  document.getElementById("header-bar").style.display = "none";
-  document.getElementById("progress-bar-wrap").style.display = "none";
 }
 
 // ============================================================
-//  SKIP BUTTON (countdown screen)
-// ============================================================
-document.getElementById("screen-countdown").addEventListener(
-  "click",
-  function (e) {
-    if (e.target.tagName === "BUTTON") return;
-  },
-  false,
-);
-
-(function () {
-  const screen = document.getElementById("screen-countdown");
-  const skipBtn = document.createElement("button");
-  skipBtn.id = "skip-ans-btn";
-  skipBtn.textContent = "⏩ 正解を見る";
-  skipBtn.style.cssText =
-    'margin-top:8px;background:transparent;border:1px solid var(--muted);border-radius:4px;color:var(--muted);padding:clamp(8px, 2vw, 16px) clamp(24px, 5vw, 48px);cursor:pointer;font-size:clamp(14px, 3vw, 24px);letter-spacing:0.15em;font-family:"Noto Sans JP";transition:all 0.2s';
-  skipBtn.onmouseover = () => {
-    skipBtn.style.borderColor = "var(--accent2)";
-    skipBtn.style.color = "var(--accent2)";
-  };
-  skipBtn.onmouseout = () => {
-    skipBtn.style.borderColor = "var(--muted)";
-    skipBtn.style.color = "var(--muted)";
-  };
-  skipBtn.onclick = () => {
-    clearInterval(countdownTimer);
-    showAnswer();
-  };
-  screen.appendChild(skipBtn);
-})();
-
-// ============================================================
-//  JUMP MENU LOGIC
+//  JUMP MENU
 // ============================================================
 function toggleJumpMenu() {
-  const menu = document.getElementById("jump-menu");
-  const isOpening = !menu.classList.contains("open");
-
+  const isOpening = !$.jumpMenu.classList.contains("open");
   if (isOpening) {
     renderJumpGrid();
-    menu.classList.add("open");
+    $.jumpMenu.classList.add("open");
   } else {
-    menu.classList.remove("open");
+    $.jumpMenu.classList.remove("open");
   }
 }
 
 function renderJumpGrid() {
-  const grid = document.getElementById("jump-grid");
-  grid.innerHTML = "";
+  $.jumpGrid.innerHTML = "";
   for (let i = 0; i < TOTAL; i++) {
     const item = document.createElement("div");
     item.className = "jump-item" + (i === currentQ ? " active" : "");
     item.textContent = i + 1;
     item.onclick = () => jumpToQuestion(i);
-    grid.appendChild(item);
+    $.jumpGrid.appendChild(item);
   }
 }
 
 function jumpToQuestion(index) {
-  // Stop everything (Audio, YouTube, Local Video, Countdown)
-  audioPlayer.pause();
-  audioPlayer.src = "";
-  document.getElementById("yt-iframe").src = "";
-  document.getElementById("local-video").pause();
+  $.audioPlayer.pause();
+  $.audioPlayer.src = "";
+  stopMedia();
   clearInterval(countdownTimer);
 
-  // Set current index
   currentQ = index;
-
-  // Make sure header is visible (if jumping from title screen or result)
-  document.getElementById("header-bar").style.display = "flex";
-  document.getElementById("progress-bar-wrap").style.display = "block";
-
-  // Hide menu and Load question
+  setHeaderVisible(true);
   toggleJumpMenu();
   loadQuestion();
 }
